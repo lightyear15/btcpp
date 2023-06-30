@@ -4,7 +4,7 @@
 #include <string>
 #include <concepts>
 
-namespace btc::bip39 {
+namespace btcpp::bip39 {
 
 using Dictionary = std::array<std::string, 2048>;
 using Seed = std::array<uint8_t, 64>;

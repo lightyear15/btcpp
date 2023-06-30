@@ -4,10 +4,17 @@ add_library(btc++
     bip39/types.hpp
     bip39/dictionary.cpp bip39/dictionary.hpp
     bip39/details.cpp bip39/details.hpp
+
+    bip32.cpp bip32.hpp
+    bip32/types.hpp
+
+    encoding.hpp encoding.cpp
     utils.cpp utils.hpp
+    crypto.hpp
 )
 
 target_link_libraries(btc++ PUBLIC
     PkgConfig::crypto++
+    external::base58
 )
 target_include_directories(btc++ PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

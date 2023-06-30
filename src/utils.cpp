@@ -3,7 +3,7 @@
 
 #include <boost/algorithm/hex.hpp>
 
-namespace btc::utils {
+namespace btcpp::utils {
 
 std::string to_hex(std::span<uint8_t> in) noexcept {
     std::string out;
@@ -18,4 +18,4 @@ std::vector<uint8_t> from_hex(std::string_view in) {
     return out;
 }
 
-} // namespace btc::utils
+} // namespace btcpp::utils

@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace btc::bip39::english {
+namespace btcpp::bip39::english {
 const std::array<std::string, 2048> dictionary{
     "abandon",  "ability",  "able",     "about",    "above",    "absent",   "absorb",   "abstract", "absurd",
     "abuse",    "access",   "accident", "account",  "accuse",   "achieve",  "acid",     "acoustic", "acquire",
@@ -235,4 +235,4 @@ const std::array<std::string, 2048> dictionary{
     "youth",    "zebra",    "zero",     "zone",     "zoo",
 };
 
-} // namespace btc::bip39::english
+} // namespace btcpp::bip39::english

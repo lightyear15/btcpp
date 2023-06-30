@@ -8,6 +8,6 @@
 #include <string_view>
 #include <vector>
 
-namespace btc::bip39::english {
+namespace btcpp::bip39::english {
 extern const std::array<std::string, 2048> dictionary;
-} // namespace btc::bip39::english
+} // namespace btcpp::bip39::english

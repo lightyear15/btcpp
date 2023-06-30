@@ -1,14 +1,14 @@
 
 #include <bitset>
-#include <crypto++/sha.h>
 #include <cstdint>
 
 #include "bip39/details.hpp"
 #include "utils.hpp"
+#include "crypto.hpp"
 
 namespace {
 uint8_t checksum(std::span<uint8_t> entropy) {
-    CryptoPP::SHA256 sha;
+    btcpp::crypto::SHA256 sha;
     sha.Update(entropy.data(), entropy.size());
     const size_t cksum_size = entropy.size() / 4;
     uint8_t checksum;
@@ -18,7 +18,7 @@ uint8_t checksum(std::span<uint8_t> entropy) {
 }
 } // namespace
 
-namespace btc::bip39::details {
+namespace btcpp::bip39::details {
 std::vector<std::string> to_mnemonic(const Dictionary &dictionary, std::vector<uint8_t> entropy) {
     uint8_t cksum = checksum(entropy);
     entropy.push_back(cksum);
@@ -46,4 +46,4 @@ std::vector<std::string> to_mnemonic(const Dictionary &dictionary, std::vector<u
     return mnemonic;
 }
 
-} // namespace btc::bip39::details
+} // namespace btcpp::bip39::details

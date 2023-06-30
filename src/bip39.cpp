@@ -1,16 +1,31 @@
 
 #include <boost/algorithm/string/join.hpp>
-#include <crypto++/pwdbased.h>
-#include <crypto++/sha.h>
+#include <crypto++/secblock.h>
+#include <crypto++/secblockfwd.h>
+#include <stdexcept>
 
-namespace btc::bip39 {
-std::array<uint8_t, 64> to_seed(const std::vector<std::string> &mnemonic, std::string_view passphrase) {
-    CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA512> pbkdf2;
-    std::array<uint8_t, 64> seed;
+#include "bip39.hpp"
+#include "crypto.hpp"
+
+namespace btcpp::bip39 {
+Seed to_seed(const std::vector<std::string> &mnemonic, std::string_view passphrase) {
+    crypto::PBKDF2 pbkdf2;
     std::string mnemonicPhrase = boost::algorithm::join(mnemonic, " ");
     std::string salt = std::string("mnemonic") + std::string(passphrase);
-    pbkdf2.DeriveKey(reinterpret_cast<unsigned char *>(seed.data()), seed.size(), 0, reinterpret_cast<unsigned char *>(mnemonicPhrase.data()),
-                     mnemonicPhrase.size(), reinterpret_cast<unsigned char *>(salt.data()), salt.size(), 2048);
+    std::array<uint8_t, 64> seed;
+    CryptoPP::SecByteBlock seedblock(seed.size());
+    pbkdf2.DeriveKey(seedblock.BytePtr(), seed.size(), 0, CryptoPP::ConstBytePtr(mnemonicPhrase), mnemonicPhrase.size(), CryptoPP::ConstBytePtr(salt),
+                     salt.size(), 2048);
+    std::copy(std::cbegin(seedblock), std::cend(seedblock), std::begin(seed));
     return seed;
 }
-} // namespace btc::bip39
+
+Seed to_seed(const std::vector<uint8_t> &raw_seed) {
+    Seed seed;
+    if (seed.size() != raw_seed.size()) {
+        throw std::invalid_argument("Invalid seed size");
+    }
+    std::copy(std::cbegin(raw_seed), std::cend(raw_seed), std::begin(seed));
+    return seed;
+}
+} // namespace btcpp::bip39

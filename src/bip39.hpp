@@ -1,3 +1,5 @@
+#pragma once
+
 #include <array>
 #include <random>
 #include <span>
@@ -6,7 +8,7 @@
 #include "bip39/details.hpp"
 #include "bip39/types.hpp"
 
-namespace btc::bip39 {
+namespace btcpp::bip39 {
 
 template <typename E>
 requires entropy<E> E generate() {
@@ -21,5 +23,6 @@ requires entropy<E> std::vector<std::string> to_mnemonic(const Dictionary &dicti
 }
 
 Seed to_seed(const std::vector<std::string> &mnemonic, std::string_view passphrase = "");
+Seed to_seed(const std::vector<uint8_t> &seed);
 
-} // namespace btc::bip39
+} // namespace btcpp::bip39
