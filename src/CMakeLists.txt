@@ -6,7 +6,6 @@ add_library(btc++
     bip39/details.cpp bip39/details.hpp
 
     bip32.cpp bip32.hpp
-    bip32/types.hpp
 
     encoding.hpp encoding.cpp
     utils.cpp utils.hpp

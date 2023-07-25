@@ -3,6 +3,7 @@
 
 namespace test {
 namespace bip39 {
+// https://github.com/trezor/python-mnemonic/blob/master/vectors.json
 const std::vector<Data> VectorData = {
     {
         "80808080808080808080808080808080",
@@ -116,6 +117,7 @@ const std::vector<Data> VectorData = {
 namespace bip32 {} // namespace bip32
 
 namespace base58 {
+// https://github.com/BTCGPU/BTCGPU/blob/master/src/test/data/base58_encode_decode.json
 const std::vector<Data> VectorData = {
     {"", ""},
     {"61", "2g"},

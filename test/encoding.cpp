@@ -14,16 +14,6 @@ namespace t58 = test::base58;
 
 namespace test::encoding {
 
-// TEST(Base58Testing, decode_1) {
-//     auto decoded = btcpp::base58::decode("2g");
-//     auto hexed = btcpp::utils::to_hex(decoded);
-//     EXPECT_EQ(hexed, "61");
-// }
-// TEST(Base58Testing, decode_2) {
-//     auto decoded = btcpp::base58::decode("a3gV");
-//     auto hexed = btcpp::utils::to_hex(decoded);
-//     EXPECT_EQ(hexed, "626262");
-// }
 class Base58VectorTesting: public ::testing::TestWithParam<t58::Data> {};
 TEST_P(Base58VectorTesting, decode) {
     auto data = GetParam();
