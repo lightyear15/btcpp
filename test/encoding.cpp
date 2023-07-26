@@ -28,4 +28,20 @@ TEST_P(Base58VectorTesting, encode) {
     EXPECT_EQ(data.base58, encoded);
 }
 INSTANTIATE_TEST_SUITE_P(encoding, Base58VectorTesting, testing::ValuesIn(t58::VectorData));
+
+class Base58CheckVectorTesting: public ::testing::TestWithParam<t58::Data> {};
+TEST_P(Base58CheckVectorTesting, decode) {
+    auto data = GetParam();
+    auto [prefix, decoded] = btcpp::base58::decodecheck(data.base58);
+    auto hexed = btcpp::utils::to_hex(decoded);
+    EXPECT_EQ(hexed, data.hex);
+}
+TEST_P(Base58CheckVectorTesting, encode) {
+    auto data = GetParam();
+    auto binary = btcpp::utils::from_hex(data.hex);
+    auto encoded = btcpp::base58::encodecheck(std::span(binary.begin() + 1, binary.end()), *binary.begin());
+    EXPECT_EQ(data.base58, encoded);
+}
+INSTANTIATE_TEST_SUITE_P(encoding, Base58CheckVectorTesting, testing::ValuesIn(t58::VectorData2));
+
 } // namespace test::encoding

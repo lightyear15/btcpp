@@ -9,9 +9,20 @@
 #include "bip32.hpp"
 
 namespace btcpp::base58 {
-std::vector<uint8_t> decode(std::string_view encoded, const std::string &prefix = {});
-std::string encode(const std::span<uint8_t> &data, const std::string &prefix = {});
+enum class Prefix: uint8_t {
+    BitcoinAddress = 0x00,
+    P2SHAddress = 0x05,
+    PrivateKey = 0x80,
 
-std::vector<uint8_t> decodecheck(std::string_view encoded, const std::string& prefix = {});
-std::string encodecheck(const std::span<uint8_t>& data, uint8_t version, const std::string& prefix = {});
+    BitcoinTestnetAddress = 0x6f,
+    P2SHTestnetAddress = 0xc4,
+    PrivateTestnetKey = 0xef,
+};
+
+std::vector<uint8_t> decode(std::string_view encoded);
+std::string encode(const std::span<uint8_t> &data);
+
+const size_t CHECKSUM_SIZE = 4;
+std::pair<Prefix, std::vector<uint8_t>> decodecheck(std::string_view encoded);
+std::string encodecheck(const std::span<uint8_t>& data, uint8_t version);
 } // namespace btcpp::base58

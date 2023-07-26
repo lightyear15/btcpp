@@ -15,7 +15,7 @@ ExternalProject_Add(libbase58
     UPDATE_COMMAND ""
     CONFIGURE_COMMAND <SOURCE_DIR>/autogen.sh
     COMMAND <SOURCE_DIR>/configure --with-pic --disable-shared --prefix <INSTALL_DIR>
-    BUILD_COMMAND make
+    BUILD_COMMAND make libbase58.la
     INSTALL_COMMAND make install
 )
 ExternalProject_Get_Property(libbase58 INSTALL_DIR)

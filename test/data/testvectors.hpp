@@ -25,5 +25,7 @@ struct Data {
     std::string base58;
 };
 extern const std::vector<Data> VectorData;
+extern const std::vector<Data> VectorData2;
+extern const std::vector<std::string> InvalidData;
 } // namespace base58
 } // namespace test
