@@ -14,6 +14,8 @@
 #include <cstdint>
 #include <string_view>
 
+const size_t CHECKSUM_SIZE = 4;
+
 namespace {
 extern "C" {
 bool base58_sha256(void *digest, const void *data, size_t data_len) {
@@ -59,6 +61,8 @@ std::string encode(const std::span<uint8_t> &data) {
     return {buffer.data()};
 }
 
+namespace internal {
+
 std::pair<Prefix, std::vector<uint8_t>> decodecheck(std::string_view encoded) {
     std::vector<uint8_t> decoded = decode(encoded);
     b58_sha256_impl = base58_sha256;
@@ -87,6 +91,8 @@ std::string encodecheck(const std::span<uint8_t> &data, uint8_t version) {
     buffer.resize(bsize);
     return {buffer.data()};
 }
+} // namespace internal
 
-
+std::vector<uint8_t> decodecheck(std::string_view encoded) { return internal::decodecheck(encoded).second; }
+std::string encodecheck(const std::span<uint8_t> &data) { return internal::encodecheck(std::span<uint8_t>(data.begin() + 1, data.end()), data[0]); }
 } // namespace btcpp::base58

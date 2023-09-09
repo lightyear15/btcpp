@@ -24,6 +24,6 @@ requires entropy<E> std::vector<std::string> to_mnemonic(const Dictionary &dicti
 }
 
 Seed to_seed(const std::vector<std::string> &mnemonic, std::string_view passphrase = "");
-Seed to_seed(const std::vector<uint8_t> &seed);
+Seed from_raw(const std::vector<uint8_t> &seed);
 
 } // namespace btcpp::bip39

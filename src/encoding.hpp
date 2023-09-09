@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
 #include <span>
 #include <string>
 #include <string_view>
@@ -9,20 +10,31 @@
 #include "bip32.hpp"
 
 namespace btcpp::base58 {
-enum class Prefix: uint8_t {
-    BitcoinAddress = 0x00,
-    P2SHAddress = 0x05,
-    PrivateKey = 0x80,
+namespace prefix {
+constexpr std::array<uint8_t, 1> P2PKH = {0x00};
+constexpr std::array<uint8_t, 1> P2SH = {0x05};
+constexpr std::array<uint8_t, 1> PrivateKey = {0x80};
+constexpr std::array<uint8_t, 4> Bip32PubKey = {0x04, 0x88, 0xB2, 0x1E};
+constexpr std::array<uint8_t, 4> Bip32PrivKey = {0x04, 0x88, 0xAD, 0xE4};
 
-    BitcoinTestnetAddress = 0x6f,
-    P2SHTestnetAddress = 0xc4,
-    PrivateTestnetKey = 0xef,
+} // namespace prefix
+enum class Prefix {
+    P2PKH,
+    P2SH,
+    PrivateKey,
+    Bip32PubKey,
+    Bip32PrivKey,
+
+    P2PKHTestnet,
+    P2SHTestnet,
+    PrivateKeyTestnet,
 };
+
+extern std::map<Prefix, std::span<uint8_t>> Prefixes;
 
 std::vector<uint8_t> decode(std::string_view encoded);
 std::string encode(const std::span<uint8_t> &data);
 
-const size_t CHECKSUM_SIZE = 4;
-std::pair<Prefix, std::vector<uint8_t>> decodecheck(std::string_view encoded);
-std::string encodecheck(const std::span<uint8_t>& data, uint8_t version);
+std::vector<uint8_t> decodecheck(std::string_view encoded);
+std::string encodecheck(const std::span<uint8_t> &data);
 } // namespace btcpp::base58

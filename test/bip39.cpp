@@ -22,18 +22,31 @@ TEST(bip39, generate_entropy) {
     ASSERT_NE(output1, output2);
 }
 
-class Bip39VectorTesting : public ::testing::TestWithParam<Data>{};
-TEST_P(Bip39VectorTesting, to_words) {
+class Bip39VectorTesting1 : public ::testing::TestWithParam<Data>{};
+TEST_P(Bip39VectorTesting1, to_words) {
     auto data = GetParam();
     auto entropy = btcpp::utils::from_hex(data.entropy);
     auto words = details::to_mnemonic(english::dictionary, entropy);
     ASSERT_EQ(words, data.mnemonic);
 }
-TEST_P(Bip39VectorTesting, to_seed) {
+TEST_P(Bip39VectorTesting1, to_seed) {
     auto data = GetParam();
     auto seed = to_seed(data.mnemonic, "TREZOR");
     ASSERT_EQ(btcpp::utils::to_hex(seed), data.seed);
 }
-INSTANTIATE_TEST_SUITE_P(bip39, Bip39VectorTesting, testing::ValuesIn(VectorData));
+INSTANTIATE_TEST_SUITE_P(bip39, Bip39VectorTesting1, testing::ValuesIn(VectorData));
 
+class Bip39VectorTesting2 : public ::testing::TestWithParam<BitcoinBookData>{};
+TEST_P(Bip39VectorTesting2, to_words) {
+    auto data = GetParam();
+    auto entropy = btcpp::utils::from_hex(data.entropy);
+    auto words = details::to_mnemonic(english::dictionary, entropy);
+    ASSERT_EQ(words, data.mnemonic);
 }
+TEST_P(Bip39VectorTesting2, to_seed) {
+    auto data = GetParam();
+    auto seed = to_seed(data.mnemonic, data.passphrase);
+    ASSERT_EQ(btcpp::utils::to_hex(seed), data.seed);
+}
+INSTANTIATE_TEST_SUITE_P(bip39, Bip39VectorTesting2, testing::ValuesIn(VectorBitcoinBookData));
+} // namespace test::bip39

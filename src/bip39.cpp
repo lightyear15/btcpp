@@ -1,6 +1,5 @@
 
 #include <boost/algorithm/string/join.hpp>
-#include <crypto++/secblock.h>
 #include <crypto++/secblockfwd.h>
 #include <stdexcept>
 
@@ -12,15 +11,15 @@ Seed to_seed(const std::vector<std::string> &mnemonic, std::string_view passphra
     crypto::PBKDF2 pbkdf2;
     std::string mnemonicPhrase = boost::algorithm::join(mnemonic, " ");
     std::string salt = std::string("mnemonic") + std::string(passphrase);
-    std::array<uint8_t, 64> seed;
+    Seed seed;
     CryptoPP::SecByteBlock seedblock(seed.size());
-    pbkdf2.DeriveKey(seedblock.BytePtr(), seed.size(), 0, CryptoPP::ConstBytePtr(mnemonicPhrase), mnemonicPhrase.size(), CryptoPP::ConstBytePtr(salt),
-                     salt.size(), 2048);
+    pbkdf2.DeriveKey(seedblock.BytePtr(), seedblock.size(), 0, CryptoPP::ConstBytePtr(mnemonicPhrase), mnemonicPhrase.size(),
+                     CryptoPP::ConstBytePtr(salt), salt.size(), 2048);
     std::copy(std::cbegin(seedblock), std::cend(seedblock), std::begin(seed));
     return seed;
 }
 
-Seed to_seed(const std::vector<uint8_t> &raw_seed) {
+Seed from_raw(const std::vector<uint8_t> &raw_seed) {
     Seed seed;
     if (seed.size() != raw_seed.size()) {
         throw std::invalid_argument("Invalid seed size");

@@ -112,9 +112,28 @@ const std::vector<Data> VectorData = {
       "open", "amazing", "screen", "patrol", "group", "space",  "point",   "ten",   "exist", "slush",   "involve", "unfold"},
      "01f5bced59dec48e362f2c45b5de68b9fd6c92c6634f44d6d40aab69056506f0e35524a518034ddc1192e1dacd32c1ed3eaa3c3b131c88ed8e7e54c49a5d0998",
      "xprv9s21ZrQH143K39rnQJknpH1WEPFJrzmAqqasiDcVrNuk926oizzJDDQkdiTvNPr2FYDYzWgiMiC63YmfPAa2oPyNB23r2g7d1yiK6WpqaQS"}};
-} // namespace bip39
 
-namespace bip32 {} // namespace bip32
+// https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch05.asciidoc#mnemonic_128_no_pass
+const std::vector<BitcoinBookData> VectorBitcoinBookData = {
+    {"0c1e24e5917779d297e14d45f14e1a1a",
+     {"army", "van", "defense", "carry", "jealous", "true", "garbage", "claim", "echo", "media", "make", "crunch"},
+     "",
+     "5b56c417303faa3fcba7e57400e120a0ca83ec5a4fc9ffba757fbe63fbd77a89a1a3be4c67196f57c39a88b76373733891bfaba16ed27a813ceed498804c0570"},
+    {
+        "0c1e24e5917779d297e14d45f14e1a1a",
+        {"army", "van", "defense", "carry", "jealous", "true", "garbage", "claim", "echo", "media", "make", "crunch"},
+        "SuperDuperSecret",
+        "3b5df16df2157104cfdd22830162a5e170c0161653e3afe6c88defeefb0818c793dbb28ab3ab091897d0715861dc8a18358f80b79d49acf64142ae57037d1d54",
+    },
+    {"2041546864449caff939d32d574753fe684d3c947c3346713dd8423e74abcf8c",
+     {"cake",    "apple",  "borrow", "silk",  "endorse", "fitness", "top",    "denial", "coil", "riot",  "stay",    "wolf",
+      "luggage", "oxygen", "faint",  "major", "edit",    "measure", "invite", "love",   "trap", "field", "dilemma", "oblige"},
+     "",
+     "3269bce2674acbd188d4f120072b13b088a0ecf87c6e4cae41657a0bb78f5315b33b3a04356e53d062e55f1e0deaa082df8d487381379df848a6ad7e98798404"
+
+    }};
+
+} // namespace bip39
 
 namespace base58 {
 // https://github.com/BTCGPU/BTCGPU/blob/master/src/test/data/base58_encode_decode.json
@@ -191,4 +210,14 @@ const std::vector<Data> VectorData2 = {
 const std::vector<std::string> InvalidData = {"Z9inZq4e2HGQRZQezDjFMmqgUE8NwMRok", "3HK7MezAm6qEZQUMPRf8jX7wDv6zig6Ky8",
                                               "3AW8j12DUk8mgA7kkfZ1BrrzCVFuH1LsXS", "#####"};
 } // namespace base58
+
+namespace bip32 {
+extern const std::vector<Data> VectorData1{
+    {"", "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
+     "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"},
+    {"0'", "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw",
+     "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7"}
+};
+} // namespace bip32
+//
 } // namespace test
