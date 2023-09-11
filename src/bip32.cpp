@@ -6,6 +6,7 @@
 #include <iterator>
 #include <map>
 #include <secp256k1.h>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -52,13 +53,13 @@ std::pair<SecretKey, ChainCode> ckdpriv(const SecretKey &secret, const ChainCode
     if (index >= 0x80000000) {
         buffer.push_back(0);
         std::copy(std::cbegin(secret), std::cend(secret), std::back_inserter(buffer));
-        index = utils::cpu2be(index);
-        auto *indexIt = reinterpret_cast<uint8_t *>(&index);
-        std::copy(indexIt, indexIt + sizeof(index), std::back_inserter(buffer));
     } else {
         PublicKey data = secp256k1::getpublickey(secret);
         std::copy(std::cbegin(data), std::cend(data), std::back_inserter(buffer));
     }
+    index = utils::cpu2be(index);
+    auto *indexIt = reinterpret_cast<uint8_t *>(&index);
+    std::copy(indexIt, indexIt + sizeof(index), std::back_inserter(buffer));
     std::array<uint8_t, hmac.DIGESTSIZE> digest;
     hmac.CalculateDigest(digest.data(), buffer.data(), buffer.size());
     const auto *digestIt = std::cbegin(digest);
@@ -161,35 +162,58 @@ Bip32Serial serialize(const HDKey &key) {
 }
 
 HDKey deserialize(const Bip32Serial &serial) {
+    secp256k1::init();
     HDKey key;
-    size_t cursor = 0;
-    uint32_t versionbytes = utils::be2cpu(*reinterpret_cast<const uint32_t *>(&serial[cursor]));
+    auto cursor = std::begin(serial);
+    uint32_t versionbytes = utils::be2cpu(*reinterpret_cast<const uint32_t *>(cursor));
     cursor += sizeof(versionbytes);
-    KeyType type;
-    for (const auto &[dictkey, dictvalue] : version) {
-        if (dictvalue == versionbytes) {
-            key.network = dictkey.first;
-            type = dictkey.second;
-            break;
-        }
+    auto foundIt = std::find_if(std::cbegin(version), std::cend(version), [&](const auto &dict) { return dict.second == versionbytes; });
+    if (foundIt == std::cend(version)) {
+        throw std::invalid_argument("unknown extended key version");
     }
-    key.depth = serial[cursor++];
-    key.fingerprint = utils::be2cpu(*reinterpret_cast<const uint32_t *>(&serial[cursor]));
+    key.network = foundIt->first.first;
+    auto type = foundIt->first.second;
+    key.depth = *cursor++;
+    key.fingerprint = utils::be2cpu(*reinterpret_cast<const uint32_t *>(cursor));
+    if (key.depth == 0 and key.fingerprint != 0) {
+        throw std::invalid_argument("zero depth with non-zero parent fingerprint");
+    }
     cursor += sizeof(key.fingerprint);
-    key.childnumber = utils::be2cpu(*reinterpret_cast<const uint32_t *>(&serial[cursor]));
+    key.childnumber = utils::be2cpu(*reinterpret_cast<const uint32_t *>(cursor));
+    if (key.depth == 0 and key.childnumber != 0) {
+        throw std::invalid_argument("zero depth with non-zero index");
+    }
     cursor += sizeof(key.childnumber);
-    std::copy_n(std::cbegin(serial) + cursor, key.chaincode.size(), std::begin(key.chaincode));
+    std::copy_n(cursor, key.chaincode.size(), std::begin(key.chaincode));
     cursor += key.chaincode.size();
     switch (type) {
-    case KeyType::PRIVATE:
+    case KeyType::PRIVATE: {
         SecretKey secret;
-        std::copy_n(std::cbegin(serial) + cursor + 1, secret.size(), std::begin(secret));
+        if (*cursor != 0) {
+            throw std::invalid_argument("prvkey version / pubkey mismatch");
+        }
+        std::copy_n(++cursor, secret.size(), std::begin(secret));
+        int res = secp256k1_ec_seckey_verify(secp256k1::ctx, secret.data());
+        if (res != 1) {
+            throw std::invalid_argument("invalid prvkey");
+        }
         key.data = secret;
-        break;
-    case KeyType::PUBLIC:
+    } break;
+    case KeyType::PUBLIC: {
+        if (*cursor == 0) {
+            throw std::invalid_argument("pubkey version / prvkey mismatch");
+        }
         PublicKey data;
-        std::copy_n(std::cbegin(serial) + cursor, data.size(), std::begin(data));
-        break;
+        secp256k1_pubkey pubkey;
+        int res = secp256k1_ec_pubkey_parse(secp256k1::ctx, &pubkey, cursor, data.size());
+        if (res != 1) {
+            throw std::invalid_argument("invalid pubkey");
+        }
+        size_t len = data.size();
+        res = secp256k1_ec_pubkey_serialize(secp256k1::ctx, data.data(), &len, &pubkey, SECP256K1_EC_COMPRESSED);
+        assert(res == 1);
+        key.data = data;
+    } break;
     }
     return key;
 }
@@ -207,6 +231,12 @@ HDKey deriveprv(const HDKey &key, const std::string &keypath) {
     HDKey derived = key;
     std::vector<std::string> paths;
     boost::split(paths, keypath, boost::is_any_of("/"));
+    if (paths[0] == "m") {
+        assert(key.depth == 0);
+        assert(key.fingerprint == 0);
+        assert(key.childnumber == 0);
+        paths.erase(paths.begin());
+    }
     for (const auto &path : paths) {
         const IndexType hardened = path.back() == '\'' ? IndexType::HARDENED : IndexType::NORMAL;
         const std::string indexstr = hardened == IndexType::HARDENED ? path.substr(0, path.size() - 1) : path;

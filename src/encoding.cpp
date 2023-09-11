@@ -1,13 +1,14 @@
 
-
 #include "encoding.hpp"
 
 #include "bip32.hpp"
 #include "crypto.hpp"
 
 #include <algorithm>
+#include <array>
 #include <crypto++/secblockfwd.h>
 #include <cstring>
+#include <span>
 #include <stdexcept>
 
 #include "libbase58.h"
@@ -44,7 +45,7 @@ std::vector<uint8_t> decode(std::string_view encoded) {
     // b58tobin places the decoded data at the end of the buffer
     return {std::cbegin(buffer) + buffer.size() - bsize, std::cend(buffer)};
 }
-std::string encode(const std::span<uint8_t> &data) {
+std::string encode(std::span<const uint8_t> data) {
     // initial buffer has the size of encoded.size() * multiplier (+ 1 in case encoded.size() == 0)
     // we keep increasing the size of the buffer by increasing the multiplier until b58tobin returns OK
     std::vector<char> buffer;
@@ -68,13 +69,13 @@ std::pair<Prefix, std::vector<uint8_t>> decodecheck(std::string_view encoded) {
     b58_sha256_impl = base58_sha256;
     int checkresult = b58check(decoded.data(), decoded.size(), encoded.data(), encoded.size());
     if (checkresult < 0) {
-        throw std::invalid_argument("invalid base58 checksum");
+        throw std::invalid_argument("invalid checksum");
     }
     decoded.resize(decoded.size() - CHECKSUM_SIZE);
     return {static_cast<Prefix>(checkresult), decoded};
 }
 
-std::string encodecheck(const std::span<uint8_t> &data, uint8_t version) {
+std::string encodecheck(std::span<const uint8_t> data, uint8_t version) {
     b58_sha256_impl = base58_sha256;
     // initial buffer has the size of encoded.size() * multiplier (+ 1 in case encoded.size() == 0)
     // we keep increasing the size of the buffer by increasing the multiplier until b58tobin returns OK
@@ -94,5 +95,20 @@ std::string encodecheck(const std::span<uint8_t> &data, uint8_t version) {
 } // namespace internal
 
 std::vector<uint8_t> decodecheck(std::string_view encoded) { return internal::decodecheck(encoded).second; }
-std::string encodecheck(const std::span<uint8_t> &data) { return internal::encodecheck(std::span<uint8_t>(data.begin() + 1, data.end()), data[0]); }
+std::string encodecheck(std::span<const uint8_t> data) { return internal::encodecheck(std::span(data.begin() + 1, data.end()), data[0]); }
+
+namespace bip32 {
+
+btcpp::bip32::Bip32Serial decode(std::string_view encoded) {
+    std::vector<uint8_t> decoded = base58::decodecheck(encoded);
+    btcpp::bip32::Bip32Serial serial;
+    if (decoded.size() != serial.size()) {
+        throw std::invalid_argument("invalid bip32 serial size");
+    }
+    std::copy(std::cbegin(decoded), std::cend(decoded), std::begin(serial));
+    return serial;
+}
+std::string encode(const btcpp::bip32::Bip32Serial &serial) { return base58::encodecheck(std::span(serial)); }
+
+} // namespace bip32
 } // namespace btcpp::base58

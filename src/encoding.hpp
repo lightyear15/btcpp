@@ -33,8 +33,15 @@ enum class Prefix {
 extern std::map<Prefix, std::span<uint8_t>> Prefixes;
 
 std::vector<uint8_t> decode(std::string_view encoded);
-std::string encode(const std::span<uint8_t> &data);
+std::string encode(std::span<const uint8_t> data);
 
 std::vector<uint8_t> decodecheck(std::string_view encoded);
-std::string encodecheck(const std::span<uint8_t> &data);
+std::string encodecheck(std::span<const uint8_t> data);
+
+namespace bip32 {
+
+// using base58Check
+btcpp::bip32::Bip32Serial decode(std::string_view encoded);
+std::string encode(const btcpp::bip32::Bip32Serial &serial);
+} // namespace bip32
 } // namespace btcpp::base58
