@@ -18,4 +18,4 @@ add_library(
 )
 
 target_link_libraries(btc++ PUBLIC PkgConfig::crypto++ PkgConfig::libsecp256k1 external::base58)
-target_include_directories(btc++ PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(btc++ PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include>)

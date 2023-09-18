@@ -19,11 +19,21 @@ namespace btcpp::bip32 {
 
 namespace {
 
-const std::map<std::pair<Network, KeyType>, uint32_t> version{
-    {{Network::MAINNET, KeyType::PUBLIC}, 0x0488b21e},
-    {{Network::MAINNET, KeyType::PRIVATE}, 0x0488ade4},
-    {{Network::TESTNET, KeyType::PUBLIC}, 0x043587cf},
-    {{Network::TESTNET, KeyType::PRIVATE}, 0x04358394},
+const std::map<std::tuple<Network, KeyType, DerivationScheme>, uint32_t> version{
+    {{Network::MAINNET, KeyType::PUBLIC, DerivationScheme::BIP44}, 0x0488b21e},
+    {{Network::MAINNET, KeyType::PRIVATE, DerivationScheme::BIP44}, 0x0488ade4},
+    {{Network::TESTNET, KeyType::PUBLIC, DerivationScheme::BIP44}, 0x043587cf},
+    {{Network::TESTNET, KeyType::PRIVATE, DerivationScheme::BIP44}, 0x04358394},
+
+    {{Network::MAINNET, KeyType::PUBLIC, DerivationScheme::BIP49}, 0x049d7cb2},
+    {{Network::MAINNET, KeyType::PRIVATE, DerivationScheme::BIP49}, 0x049d7878},
+    {{Network::TESTNET, KeyType::PUBLIC, DerivationScheme::BIP49}, 0x044a5262},
+    {{Network::TESTNET, KeyType::PRIVATE, DerivationScheme::BIP49}, 0x044a4e28},
+
+    {{Network::MAINNET, KeyType::PUBLIC, DerivationScheme::BIP84}, 0x04b24746},
+    {{Network::MAINNET, KeyType::PRIVATE, DerivationScheme::BIP84}, 0x04b2430c},
+    {{Network::TESTNET, KeyType::PUBLIC, DerivationScheme::BIP84}, 0x045f1cf6},
+    {{Network::TESTNET, KeyType::PRIVATE, DerivationScheme::BIP84}, 0x045f18bc},
 };
 
 struct SerializeDataVisitor {
@@ -94,6 +104,7 @@ HDKey deriveprv(const HDKey &key, uint32_t index, IndexType type) {
     uint32_t fingerprint = utils::be2cpu(*reinterpret_cast<uint32_t *>(digest.data()));
 
     HDKey derived{
+        .scheme = key.scheme,
         .depth = key.depth + 1,
         .fingerprint = fingerprint,
         .childnumber = index,
@@ -120,8 +131,9 @@ MasterKey to_master_key(const bip39::Seed &seed) {
     return master_key;
 }
 
-HDKey tohdkey(const MasterKey &master_key, Network network) {
+HDKey tohdkey(const MasterKey &master_key, DerivationScheme scheme, Network network) {
     HDKey hdkey{
+        .scheme = scheme,
         .depth = 0,
         .fingerprint = 0,
         .childnumber = 0,
@@ -140,7 +152,7 @@ Bip32Serial serialize(const HDKey &key) {
     auto *versionbytes = reinterpret_cast<uint32_t *>(&serial[cursor]);
     cursor += sizeof(*versionbytes);
     auto type = std::holds_alternative<SecretKey>(key.data) ? KeyType::PRIVATE : KeyType::PUBLIC;
-    auto dictkey = std::pair<Network, KeyType>{key.network, type};
+    auto dictkey = std::make_tuple(key.network, type, key.scheme);
     *versionbytes = utils::cpu2be(version.at(dictkey));
     serial[cursor++] = key.depth;
 
@@ -171,8 +183,9 @@ HDKey deserialize(const Bip32Serial &serial) {
     if (foundIt == std::cend(version)) {
         throw std::invalid_argument("unknown extended key version");
     }
-    key.network = foundIt->first.first;
-    auto type = foundIt->first.second;
+    key.network = std::get<0>(foundIt->first);
+    auto type = std::get<1>(foundIt->first);
+    key.scheme = std::get<2>(foundIt->first);
     key.depth = *cursor++;
     key.fingerprint = utils::be2cpu(*reinterpret_cast<const uint32_t *>(cursor));
     if (key.depth == 0 and key.fingerprint != 0) {

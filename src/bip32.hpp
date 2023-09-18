@@ -28,8 +28,14 @@ enum class IndexType {
     NORMAL,
     HARDENED,
 };
+enum class DerivationScheme {
+    BIP44,
+    BIP49,
+    BIP84,
+};
 
 struct HDKey {
+    DerivationScheme scheme;
     unsigned depth;
     unsigned fingerprint;
     unsigned childnumber;
@@ -41,7 +47,7 @@ struct HDKey {
 
 const std::string MASTERKEY_KEY = "Bitcoin seed";
 MasterKey to_master_key(const bip39::Seed &seed);
-HDKey tohdkey(const MasterKey &master_key, Network network);
+HDKey tohdkey(const MasterKey &master_key, DerivationScheme scheme = DerivationScheme::BIP44, Network network = Network::MAINNET);
 Bip32Serial serialize(const HDKey &key);
 HDKey deserialize(const Bip32Serial &serial);
 HDKey deriveprv(const HDKey &key, const std::string &keypath);
