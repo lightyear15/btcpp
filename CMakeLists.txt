@@ -39,6 +39,7 @@ pkg_check_modules(libsecp256k1 REQUIRED IMPORTED_TARGET libsecp256k1)
 
 add_subdirectory(src)
 
+#### tests
 if(NOT ENABLE_TESTS)
     return()
 endif()

@@ -20,7 +20,7 @@ requires entropy<E> E generate() {
 }
 template <typename E>
 requires entropy<E> std::vector<std::string> to_mnemonic(const Dictionary &dictionary, E entropy) {
-    return details::to_mnemonic(dictionary, std::span<E>(entropy));
+    return details::to_mnemonic(dictionary, std::span<const uint8_t>(entropy));
 }
 
 Seed to_seed(const std::vector<std::string> &mnemonic, std::string_view passphrase = "");
