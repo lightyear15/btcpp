@@ -1,8 +1,5 @@
 #pragma once
 
-#include <array>
-#include <functional>
-#include <random>
 #include <span>
 #include <string>
 
@@ -14,10 +11,10 @@ namespace btcpp::bip39 {
 template <typename E>
 requires entropy<E> E generate() {
     E entropy;
-    std::independent_bits_engine<std::random_device, UINT8_WIDTH, uint8_t> rng;
-    std::generate(std::begin(entropy), std::end(entropy), std::ref(rng));
+    details::generate(std::span<uint8_t>(entropy.begin(), entropy.end()));
     return entropy;
 }
+
 template <typename E>
 requires entropy<E> std::vector<std::string> to_mnemonic(const Dictionary &dictionary, E entropy) {
     return details::to_mnemonic(dictionary, std::span<const uint8_t>(entropy));

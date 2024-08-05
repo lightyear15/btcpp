@@ -47,4 +47,8 @@ std::vector<std::string> to_mnemonic(const Dictionary &dictionary, std::span<con
     return mnemonic;
 }
 
+void generate(std::span<uint8_t> entropy) {
+    std::independent_bits_engine<std::random_device, UINT8_WIDTH, uint8_t> rng;
+    std::generate(std::begin(entropy), std::end(entropy), std::ref(rng));
+}
 } // namespace btcpp::bip39::details
