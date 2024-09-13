@@ -13,8 +13,8 @@ Seed to_seed(const std::vector<std::string> &mnemonic, std::string_view passphra
     std::string salt = std::string("mnemonic") + std::string(passphrase);
     Seed seed;
     CryptoPP::SecByteBlock seedblock(seed.size());
-    pbkdf2.DeriveKey(seedblock.BytePtr(), seedblock.size(), 0, CryptoPP::ConstBytePtr(mnemonicPhrase), mnemonicPhrase.size(),
-                     CryptoPP::ConstBytePtr(salt), salt.size(), 2048);
+    pbkdf2.DeriveKey(seedblock.BytePtr(), seedblock.size(), 0, CryptoPP::ConstBytePtr(mnemonicPhrase),
+                     mnemonicPhrase.size(), CryptoPP::ConstBytePtr(salt), salt.size(), 2048);
     std::copy(std::cbegin(seedblock), std::cend(seedblock), std::begin(seed));
     return seed;
 }

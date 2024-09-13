@@ -1,9 +1,9 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <variant>
-#include <array>
 
 #include "bip39/types.hpp"
 #include "ec.hpp"
@@ -47,13 +47,21 @@ struct HDKey {
     std::string keypath;
 };
 const std::string MASTERKEY_KEY = "Bitcoin seed";
-MasterKey to_master_key(const bip39::Seed &seed);
-HDKey tohdkey(const MasterKey &master_key, DerivationScheme scheme = DerivationScheme::BIP44, Network network = Network::MAINNET);
+/// from bip39 seed to master
+MasterKey to_masterKey(const bip39::Seed &seed);
+/// given the network and derivation scheme type the master key is operating, it returns the HDKey
+HDKey to_hdKey(const MasterKey &master_key, DerivationScheme scheme = DerivationScheme::BIP44,
+               Network network = Network::MAINNET);
+/// serialize and deserialize
 Bip32Serial serialize(const HDKey &key);
 HDKey deserialize(const Bip32Serial &serial);
-HDKey deriveprv(const HDKey &key, const std::string &keypath);
-HDKey derivepub(const HDKey &key, const std::string &keypath);
-ec::SecretKey to_private_key(const HDKey &key);
-ec::PublicKey to_public_key(const HDKey &key);
+/// derivation functions
+/// keypath example: 
+///     - absolute path: ``m/44``: this requires HDKey to be a Master Key
+///     - relative path: ``0/1``: HDKey can be at any depth
+HDKey derive_prv(const HDKey &key, const std::string &keypath);
+HDKey derive_pub(const HDKey &key, const std::string &keypath);
+ec::SecretKey to_secretKey(const HDKey &key);
+ec::PublicKey to_publicKey(const HDKey &key);
 std::string to_address(const HDKey &key);
 } // namespace btcpp::bip32

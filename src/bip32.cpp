@@ -2,8 +2,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/functional/hash.hpp>
 #include <map>
 #include <stdexcept>
+#include <unordered_map>
 #include <utility>
 
 #include "bip32.hpp"
@@ -15,7 +17,24 @@ namespace btcpp::bip32 {
 
 namespace {
 
-const std::map<std::tuple<Network, KeyType, DerivationScheme>, uint32_t> version{
+struct VersionKey {
+    Network network;
+    KeyType type;
+    DerivationScheme scheme;
+    bool operator==(const VersionKey &other) const {
+        return network == other.network and type == other.type and scheme == other.scheme;
+    }
+};
+struct VersionKeyHash {
+    std::size_t operator()(const VersionKey &key) const {
+        std::size_t seed = 0;
+        boost::hash_combine(seed, key.network);
+        boost::hash_combine(seed, key.type);
+        boost::hash_combine(seed, key.scheme);
+        return seed;
+    }
+};
+const std::unordered_map<VersionKey, uint32_t, VersionKeyHash> version{
     {{Network::MAINNET, KeyType::PUBLIC, DerivationScheme::BIP44}, 0x0488b21e},
     {{Network::MAINNET, KeyType::PRIVATE, DerivationScheme::BIP44}, 0x0488ade4},
     {{Network::TESTNET, KeyType::PUBLIC, DerivationScheme::BIP44}, 0x043587cf},
@@ -81,7 +100,8 @@ std::pair<ec::SecretKey, ChainCode> ckdpriv(const ec::SecretKey &secret, const C
     return {newsecret, newchain};
 }
 
-std::pair<ec::CompressedPublicKey, ChainCode> ckdpub(const ec::SecretKey &secret, const ChainCode &chain, uint32_t index) {
+std::pair<ec::CompressedPublicKey, ChainCode> ckdpub(const ec::SecretKey &secret, const ChainCode &chain,
+                                                     uint32_t index) {
     auto [newsecret, newchain] = ckdpriv(secret, chain, index);
     auto newdata = ec::get_public_key(newsecret);
     return {newdata, newchain};
@@ -114,7 +134,7 @@ HDKey deriveprv(const HDKey &key, uint32_t index, IndexType type) {
 
 } // namespace
 //
-MasterKey to_master_key(const bip39::Seed &seed) {
+MasterKey to_masterKey(const bip39::Seed &seed) {
     crypto::HMAC512Digestor hmac(CryptoPP::ConstBytePtr(MASTERKEY_KEY));
     MasterKey master_key;
     std::array<uint8_t, master_key.secret.size() + master_key.chain_code.size()> digest;
@@ -127,7 +147,7 @@ MasterKey to_master_key(const bip39::Seed &seed) {
     return master_key;
 }
 
-HDKey tohdkey(const MasterKey &master_key, DerivationScheme scheme, Network network) {
+HDKey to_hdKey(const MasterKey &master_key, DerivationScheme scheme, Network network) {
     HDKey hdkey{
         .scheme = scheme,
         .depth = 0,
@@ -148,7 +168,7 @@ Bip32Serial serialize(const HDKey &key) {
     auto *versionbytes = reinterpret_cast<uint32_t *>(&serial[cursor]);
     cursor += sizeof(*versionbytes);
     auto type = std::holds_alternative<ec::SecretKey>(key.data) ? KeyType::PRIVATE : KeyType::PUBLIC;
-    auto dictkey = std::make_tuple(key.network, type, key.scheme);
+    VersionKey dictkey{key.network, type, key.scheme};
     *versionbytes = utils::cpu2be(version.at(dictkey));
     serial[cursor++] = key.depth;
 
@@ -172,16 +192,17 @@ Bip32Serial serialize(const HDKey &key) {
 HDKey deserialize(const Bip32Serial &serial) {
     secp256k1::init();
     HDKey key;
-    const auto* cursor = std::begin(serial);
+    const auto *cursor = std::begin(serial);
     uint32_t versionbytes = utils::be2cpu(*reinterpret_cast<const uint32_t *>(cursor));
     cursor += sizeof(versionbytes);
-    auto foundIt = std::find_if(std::cbegin(version), std::cend(version), [&](const auto &dict) { return dict.second == versionbytes; });
+    auto foundIt = std::find_if(std::cbegin(version), std::cend(version),
+                                [&](const auto &dict) { return dict.second == versionbytes; });
     if (foundIt == std::cend(version)) {
         throw std::invalid_argument("unknown extended key version");
     }
-    key.network = std::get<0>(foundIt->first);
-    auto type = std::get<1>(foundIt->first);
-    key.scheme = std::get<2>(foundIt->first);
+    key.network = foundIt->first.network;
+    auto type = foundIt->first.type;
+    key.scheme = foundIt->first.scheme;
     key.depth = *cursor++;
     key.fingerprint = utils::be2cpu(*reinterpret_cast<const uint32_t *>(cursor));
     if (key.depth == 0 and key.fingerprint != 0) {
@@ -227,7 +248,7 @@ HDKey deserialize(const Bip32Serial &serial) {
     return key;
 }
 
-HDKey deriveprv(const HDKey &key, const std::string &keypath) {
+HDKey derive_prv(const HDKey &key, const std::string &keypath) {
     secp256k1::init();
     auto type = std::holds_alternative<ec::SecretKey>(key.data) ? KeyType::PRIVATE : KeyType::PUBLIC;
     if (type != KeyType::PRIVATE) {
@@ -254,7 +275,7 @@ HDKey deriveprv(const HDKey &key, const std::string &keypath) {
     }
     return derived;
 }
-HDKey derivepub(const HDKey &key, const std::string &keypath) {
+HDKey derive_pub(const HDKey &key, const std::string &keypath) {
     secp256k1::init();
 
     if (keypath.empty()) {
@@ -268,7 +289,7 @@ HDKey derivepub(const HDKey &key, const std::string &keypath) {
     boost::split(paths, keypath, boost::is_any_of("/"));
     switch (type) {
     case KeyType::PRIVATE: {
-        HDKey derived = deriveprv(key, keypath);
+        HDKey derived = derive_prv(key, keypath);
         derived.data = std::visit(GetPublicKeyVisitor(), derived.data);
         return derived;
     }

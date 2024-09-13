@@ -26,8 +26,8 @@ TEST_P(Bip39VectorTesting_B, to_master_key) {
     auto seed = b39::from_raw(btcpp::utils::from_hex(data.seed));
     auto decoded = b58::decodecheck(data.master_key);
 
-    auto master_key = b32::to_master_key(seed);
-    auto hdkey = b32::tohdkey(master_key);
+    auto master_key = b32::to_masterKey(seed);
+    auto hdkey = b32::to_hdKey(master_key);
     auto bip32serial = b32::serialize(hdkey);
     std::vector<uint8_t> actual{bip32serial.begin(), bip32serial.end()};
     ASSERT_EQ(decoded, actual);
@@ -40,8 +40,8 @@ TEST_P(Bip32VectorTesting1, derivepriv) {
     auto raw = btcpp::utils::from_hex(seed1);
 
     auto master_key = btcpp::utils::from_short_seed(raw);
-    auto hdkey = b32::tohdkey(master_key);
-    auto derived = b32::deriveprv(hdkey, data.chain);
+    auto hdkey = b32::to_hdKey(master_key);
+    auto derived = b32::derive_prv(hdkey, data.chain);
     auto serial = b32::serialize(derived);
     std::string actual = b58::encodecheck(serial);
 
@@ -52,8 +52,8 @@ TEST_P(Bip32VectorTesting1, derivepub) {
     auto raw = btcpp::utils::from_hex(seed1);
 
     auto master_key = btcpp::utils::from_short_seed(raw);
-    auto hdkey = b32::tohdkey(master_key);
-    auto derived = b32::derivepub(hdkey, data.chain);
+    auto hdkey = b32::to_hdKey(master_key);
+    auto derived = b32::derive_pub(hdkey, data.chain);
     auto serial = b32::serialize(derived);
 
     std::string actual = b58::encodecheck(serial);
@@ -67,8 +67,8 @@ TEST_P(Bip32VectorTesting2, derivepriv) {
     auto raw = btcpp::utils::from_hex(seed2);
 
     auto master_key = btcpp::utils::from_short_seed(raw);
-    auto hdkey = b32::tohdkey(master_key);
-    auto derived = b32::deriveprv(hdkey, data.chain);
+    auto hdkey = b32::to_hdKey(master_key);
+    auto derived = b32::derive_prv(hdkey, data.chain);
     auto serial = b32::serialize(derived);
     std::string actual = b58::encodecheck(serial);
 
@@ -79,8 +79,8 @@ TEST_P(Bip32VectorTesting2, derivepub) {
     auto raw = btcpp::utils::from_hex(seed2);
 
     auto master_key = btcpp::utils::from_short_seed(raw);
-    auto hdkey = b32::tohdkey(master_key);
-    auto derived = b32::derivepub(hdkey, data.chain);
+    auto hdkey = b32::to_hdKey(master_key);
+    auto derived = b32::derive_pub(hdkey, data.chain);
     auto serial = b32::serialize(derived);
 
     std::string actual = b58::encodecheck(serial);
@@ -94,8 +94,8 @@ TEST_P(Bip32VectorTesting3, derivepriv) {
     auto raw = btcpp::utils::from_hex(seed3);
 
     auto master_key = btcpp::utils::from_short_seed(raw);
-    auto hdkey = b32::tohdkey(master_key);
-    auto derived = b32::deriveprv(hdkey, data.chain);
+    auto hdkey = b32::to_hdKey(master_key);
+    auto derived = b32::derive_prv(hdkey, data.chain);
     auto serial = b32::serialize(derived);
     std::string actual = b58::encodecheck(serial);
 
@@ -106,8 +106,8 @@ TEST_P(Bip32VectorTesting3, derivepub) {
     auto raw = btcpp::utils::from_hex(seed3);
 
     auto master_key = btcpp::utils::from_short_seed(raw);
-    auto hdkey = b32::tohdkey(master_key);
-    auto derived = b32::derivepub(hdkey, data.chain);
+    auto hdkey = b32::to_hdKey(master_key);
+    auto derived = b32::derive_pub(hdkey, data.chain);
     auto serial = b32::serialize(derived);
 
     std::string actual = b58::encodecheck(serial);
@@ -121,8 +121,8 @@ TEST_P(Bip32VectorTesting4, derivepriv) {
     auto raw = btcpp::utils::from_hex(seed4);
 
     auto master_key = btcpp::utils::from_short_seed(raw);
-    auto hdkey = b32::tohdkey(master_key);
-    auto derived = b32::deriveprv(hdkey, data.chain);
+    auto hdkey = b32::to_hdKey(master_key);
+    auto derived = b32::derive_prv(hdkey, data.chain);
     auto serial = b32::serialize(derived);
     std::string actual = b58::encodecheck(serial);
 
@@ -133,8 +133,8 @@ TEST_P(Bip32VectorTesting4, derivepub) {
     auto raw = btcpp::utils::from_hex(seed4);
 
     auto master_key = btcpp::utils::from_short_seed(raw);
-    auto hdkey = b32::tohdkey(master_key);
-    auto derived = b32::derivepub(hdkey, data.chain);
+    auto hdkey = b32::to_hdKey(master_key);
+    auto derived = b32::derive_pub(hdkey, data.chain);
     auto serial = b32::serialize(derived);
 
     std::string actual = b58::encodecheck(serial);

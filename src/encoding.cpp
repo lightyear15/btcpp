@@ -21,7 +21,8 @@ namespace {
 extern "C" {
 bool base58_sha256(void *digest, const void *data, size_t data_len) {
     btcpp::crypto::SHA256Digestor hash;
-    hash.CalculateDigest(reinterpret_cast<CryptoPP::byte *>(digest), reinterpret_cast<const CryptoPP::byte *>(data), data_len);
+    hash.CalculateDigest(reinterpret_cast<CryptoPP::byte *>(digest), reinterpret_cast<const CryptoPP::byte *>(data),
+                         data_len);
     return true;
 }
 } // extern "C"
@@ -95,7 +96,9 @@ std::string encodecheck(std::span<const uint8_t> data, uint8_t version) {
 } // namespace internal
 
 std::vector<uint8_t> decodecheck(std::string_view encoded) { return internal::decodecheck(encoded).second; }
-std::string encodecheck(std::span<const uint8_t> data) { return internal::encodecheck(std::span(data.begin() + 1, data.end()), data[0]); }
+std::string encodecheck(std::span<const uint8_t> data) {
+    return internal::encodecheck(std::span(data.begin() + 1, data.end()), data[0]);
+}
 
 namespace bip32 {
 
