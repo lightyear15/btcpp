@@ -3,15 +3,17 @@
 
 #include <cassert>
 #include <iostream>
+#include <random>
 
 namespace btcpp {
 
 namespace crypto {
-void HASH160::CalculateDigest(uint8_t *digest, const uint8_t *input, size_t length) {
+void HASH160Digestor::CalculateDigest(uint8_t *digest, const uint8_t *input, size_t length) {
+    SHA256Digestor shaDigestor;
     SHA256 sha;
-    std::array<uint8_t, sha.DIGESTSIZE> sha_digest;
-    sha.CalculateDigest(sha_digest.data(), input, length);
-    CryptoPP::RIPEMD160().CalculateDigest(digest, sha_digest.data(), sha.DIGESTSIZE);
+    shaDigestor.CalculateDigest(sha.data(), input, length);
+    RIPEMD160Digestor ripemd160Digestor;
+    ripemd160Digestor.CalculateDigest(digest, sha.data(), shaDigestor.DIGESTSIZE);
 }
 } // namespace crypto
 
@@ -36,19 +38,8 @@ void call_once() {
     }
 }
 } // namespace
-//
-void init() {
-    std::call_once(init_flag, call_once);
-}
-std::array<uint8_t, 33> getpublickey(const std::array<uint8_t, 32> &secret) {
-    secp256k1_pubkey pubkey;
-    int res = secp256k1_ec_pubkey_create(secp256k1::ctx, &pubkey, secret.data());
-    assert(res == 1);
-    std::array<uint8_t, 33> data;
-    size_t outlen = data.size();
-    secp256k1_ec_pubkey_serialize(secp256k1::ctx, data.data(), &outlen, &pubkey, SECP256K1_EC_COMPRESSED);
-    assert(outlen == data.size());
-    return data;
-}
+
+void init() { std::call_once(init_flag, call_once); }
+
 } // namespace secp256k1
 } // namespace btcpp

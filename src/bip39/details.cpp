@@ -1,6 +1,7 @@
 
 #include <bitset>
 #include <cstdint>
+#include <random>
 
 #include "bip39/details.hpp"
 #include "utils.hpp"
@@ -8,7 +9,7 @@
 
 namespace {
 uint8_t checksum(std::span<const uint8_t> entropy) {
-    btcpp::crypto::SHA256 sha;
+    btcpp::crypto::SHA256Digestor sha;
     sha.Update(entropy.data(), entropy.size());
     const size_t cksum_size = entropy.size() / 4;
     uint8_t checksum;

@@ -9,6 +9,8 @@ add_library(
     bip39/details.hpp
     bip32.cpp
     bip32.hpp
+    ec.hpp
+    ec.cpp
     encoding.hpp
     encoding.cpp
     utils.cpp

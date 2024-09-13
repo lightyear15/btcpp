@@ -2,17 +2,13 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <cstdint>
-#include <iterator>
 #include <map>
-#include <secp256k1.h>
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
-#include <variant>
 
 #include "bip32.hpp"
 #include "crypto.hpp"
+#include "ec.hpp"
 #include "utils.hpp"
 
 namespace btcpp::bip32 {
@@ -39,11 +35,11 @@ const std::map<std::tuple<Network, KeyType, DerivationScheme>, uint32_t> version
 struct SerializeDataVisitor {
     uint8_t *buffer;
     size_t sized = 0;
-    void operator()(const PublicKey &data) {
+    void operator()(const ec::CompressedPublicKey &data) {
         std::copy(std::cbegin(data), std::cend(data), buffer);
         sized = data.size();
     }
-    void operator()(const SecretKey &data) {
+    void operator()(const ec::SecretKey &data) {
         buffer[0] = 0;
         std::copy(std::cbegin(data), std::cend(data), buffer + 1);
         sized = data.size() + 1;
@@ -52,19 +48,19 @@ struct SerializeDataVisitor {
 
 struct GetPublicKeyVisitor {
     GetPublicKeyVisitor() { secp256k1::init(); }
-    PublicKey operator()(const PublicKey &data) { return data; }
-    PublicKey operator()(const SecretKey &secret) { return secp256k1::getpublickey(secret); }
+    ec::CompressedPublicKey operator()(const ec::CompressedPublicKey &data) { return data; }
+    ec::CompressedPublicKey operator()(const ec::SecretKey &secret) { return ec::get_public_key(secret); }
 };
 
-std::pair<SecretKey, ChainCode> ckdpriv(const SecretKey &secret, const ChainCode &chain, uint32_t index) {
-    crypto::HMAC512 hmac(chain.data(), chain.size());
+std::pair<ec::SecretKey, ChainCode> ckdpriv(const ec::SecretKey &secret, const ChainCode &chain, uint32_t index) {
+    crypto::HMAC512Digestor hmac(chain.data(), chain.size());
     std::vector<uint8_t> buffer;
     ;
     if (index >= 0x80000000) {
         buffer.push_back(0);
         std::copy(std::cbegin(secret), std::cend(secret), std::back_inserter(buffer));
     } else {
-        PublicKey data = secp256k1::getpublickey(secret);
+        ec::CompressedPublicKey data = ec::get_public_key(secret);
         std::copy(std::cbegin(data), std::cend(data), std::back_inserter(buffer));
     }
     index = utils::cpu2be(index);
@@ -73,7 +69,7 @@ std::pair<SecretKey, ChainCode> ckdpriv(const SecretKey &secret, const ChainCode
     std::array<uint8_t, hmac.DIGESTSIZE> digest;
     hmac.CalculateDigest(digest.data(), buffer.data(), buffer.size());
     const auto *digestIt = std::cbegin(digest);
-    SecretKey newsecret;
+    ec::SecretKey newsecret;
     ChainCode newchain;
     std::copy_n(digestIt, newsecret.size(), std::begin(newsecret));
     digestIt += newsecret.size();
@@ -85,22 +81,22 @@ std::pair<SecretKey, ChainCode> ckdpriv(const SecretKey &secret, const ChainCode
     return {newsecret, newchain};
 }
 
-std::pair<PublicKey, ChainCode> ckdpub(const SecretKey &secret, const ChainCode &chain, uint32_t index) {
+std::pair<ec::CompressedPublicKey, ChainCode> ckdpub(const ec::SecretKey &secret, const ChainCode &chain, uint32_t index) {
     auto [newsecret, newchain] = ckdpriv(secret, chain, index);
-    auto newdata = secp256k1::getpublickey(newsecret);
+    auto newdata = ec::get_public_key(newsecret);
     return {newdata, newchain};
 }
 
 HDKey deriveprv(const HDKey &key, uint32_t index, IndexType type) {
     assert(index < 0x80000000);
-    assert(std::holds_alternative<SecretKey>(key.data));
+    assert(std::holds_alternative<ec::SecretKey>(key.data));
 
     index += (type == IndexType::HARDENED) ? 0x80000000 : 0;
-    const auto &secret = std::get<SecretKey>(key.data);
+    const auto &secret = std::get<ec::SecretKey>(key.data);
     auto [newsecret, newchain] = ckdpriv(secret, key.chaincode, index);
-    PublicKey data = secp256k1::getpublickey(secret);
-    std::array<uint8_t, crypto::HASH160::DIGESTSIZE> digest;
-    crypto::HASH160::CalculateDigest(digest.data(), data.data(), data.size());
+    ec::CompressedPublicKey data = ec::get_public_key(secret);
+    crypto::HASH160 digest;
+    crypto::HASH160Digestor::CalculateDigest(digest.data(), data.data(), data.size());
     uint32_t fingerprint = utils::be2cpu(*reinterpret_cast<uint32_t *>(digest.data()));
 
     HDKey derived{
@@ -119,10 +115,10 @@ HDKey deriveprv(const HDKey &key, uint32_t index, IndexType type) {
 } // namespace
 //
 MasterKey to_master_key(const bip39::Seed &seed) {
-    crypto::HMAC512 hmac(CryptoPP::ConstBytePtr(MASTERKEY_KEY));
+    crypto::HMAC512Digestor hmac(CryptoPP::ConstBytePtr(MASTERKEY_KEY));
     MasterKey master_key;
     std::array<uint8_t, master_key.secret.size() + master_key.chain_code.size()> digest;
-    static_assert(digest.size() == crypto::HMAC512::DIGESTSIZE, "digest size mismatch");
+    static_assert(digest.size() == crypto::HMAC512Digestor::DIGESTSIZE, "digest size mismatch");
     hmac.CalculateDigest(digest.data(), seed.data(), seed.size());
     const auto *digestIt = std::cbegin(digest);
     std::copy_n(digestIt, master_key.secret.size(), std::begin(master_key.secret));
@@ -151,7 +147,7 @@ Bip32Serial serialize(const HDKey &key) {
 
     auto *versionbytes = reinterpret_cast<uint32_t *>(&serial[cursor]);
     cursor += sizeof(*versionbytes);
-    auto type = std::holds_alternative<SecretKey>(key.data) ? KeyType::PRIVATE : KeyType::PUBLIC;
+    auto type = std::holds_alternative<ec::SecretKey>(key.data) ? KeyType::PRIVATE : KeyType::PUBLIC;
     auto dictkey = std::make_tuple(key.network, type, key.scheme);
     *versionbytes = utils::cpu2be(version.at(dictkey));
     serial[cursor++] = key.depth;
@@ -176,7 +172,7 @@ Bip32Serial serialize(const HDKey &key) {
 HDKey deserialize(const Bip32Serial &serial) {
     secp256k1::init();
     HDKey key;
-    auto cursor = std::begin(serial);
+    const auto* cursor = std::begin(serial);
     uint32_t versionbytes = utils::be2cpu(*reinterpret_cast<const uint32_t *>(cursor));
     cursor += sizeof(versionbytes);
     auto foundIt = std::find_if(std::cbegin(version), std::cend(version), [&](const auto &dict) { return dict.second == versionbytes; });
@@ -201,7 +197,7 @@ HDKey deserialize(const Bip32Serial &serial) {
     cursor += key.chaincode.size();
     switch (type) {
     case KeyType::PRIVATE: {
-        SecretKey secret;
+        ec::SecretKey secret;
         if (*cursor != 0) {
             throw std::invalid_argument("prvkey version / pubkey mismatch");
         }
@@ -216,7 +212,7 @@ HDKey deserialize(const Bip32Serial &serial) {
         if (*cursor == 0) {
             throw std::invalid_argument("pubkey version / prvkey mismatch");
         }
-        PublicKey data;
+        ec::CompressedPublicKey data;
         secp256k1_pubkey pubkey;
         int res = secp256k1_ec_pubkey_parse(secp256k1::ctx, &pubkey, cursor, data.size());
         if (res != 1) {
@@ -233,7 +229,7 @@ HDKey deserialize(const Bip32Serial &serial) {
 
 HDKey deriveprv(const HDKey &key, const std::string &keypath) {
     secp256k1::init();
-    auto type = std::holds_alternative<SecretKey>(key.data) ? KeyType::PRIVATE : KeyType::PUBLIC;
+    auto type = std::holds_alternative<ec::SecretKey>(key.data) ? KeyType::PRIVATE : KeyType::PUBLIC;
     if (type != KeyType::PRIVATE) {
         throw std::invalid_argument("can't derive a private key from a public one");
     }
@@ -245,9 +241,9 @@ HDKey deriveprv(const HDKey &key, const std::string &keypath) {
     std::vector<std::string> paths;
     boost::split(paths, keypath, boost::is_any_of("/"));
     if (paths[0] == "m") {
-        assert(key.depth == 0);
-        assert(key.fingerprint == 0);
-        assert(key.childnumber == 0);
+        if (key.depth != 0 or key.fingerprint != 0 or key.childnumber != 0) {
+            throw std::invalid_argument("key is not master key");
+        }
         paths.erase(paths.begin());
     }
     for (const auto &path : paths) {
@@ -267,7 +263,7 @@ HDKey derivepub(const HDKey &key, const std::string &keypath) {
         return derived;
     }
 
-    auto type = std::holds_alternative<SecretKey>(key.data) ? KeyType::PRIVATE : KeyType::PUBLIC;
+    auto type = std::holds_alternative<ec::SecretKey>(key.data) ? KeyType::PRIVATE : KeyType::PUBLIC;
     std::vector<std::string> paths;
     boost::split(paths, keypath, boost::is_any_of("/"));
     switch (type) {

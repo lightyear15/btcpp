@@ -20,7 +20,7 @@ const size_t CHECKSUM_SIZE = 4;
 namespace {
 extern "C" {
 bool base58_sha256(void *digest, const void *data, size_t data_len) {
-    btcpp::crypto::SHA256 hash;
+    btcpp::crypto::SHA256Digestor hash;
     hash.CalculateDigest(reinterpret_cast<CryptoPP::byte *>(digest), reinterpret_cast<const CryptoPP::byte *>(data), data_len);
     return true;
 }

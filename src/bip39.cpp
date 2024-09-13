@@ -8,7 +8,7 @@
 
 namespace btcpp::bip39 {
 Seed to_seed(const std::vector<std::string> &mnemonic, std::string_view passphrase) {
-    crypto::PBKDF2 pbkdf2;
+    crypto::PBKDF2Digestor pbkdf2;
     std::string mnemonicPhrase = boost::algorithm::join(mnemonic, " ");
     std::string salt = std::string("mnemonic") + std::string(passphrase);
     Seed seed;
